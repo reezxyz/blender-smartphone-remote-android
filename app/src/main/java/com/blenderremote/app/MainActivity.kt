@@ -15,9 +15,11 @@ import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
+import android.view.ViewConfiguration
 import android.view.WindowManager
 import android.widget.EditText
 import android.widget.FrameLayout
+import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -42,11 +44,15 @@ import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException
 import com.google.ar.core.exceptions.UnavailableSdkTooOldException
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException
 import java.io.File
+import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 import kotlin.math.atan
+import kotlin.math.atan2
+import kotlin.math.hypot
+import kotlin.math.sqrt
 
 class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
 
@@ -58,6 +64,7 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
         const val AMBER = 0xFFFFB300.toInt()
         const val RED = 0xFFFF5252.toInt()
         const val WHITE = 0xFFFFFFFF.toInt()
+        const val METERS_PER_PIXEL = 0.0025f
     }
 
     // Views
@@ -71,8 +78,15 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
     private lateinit var btnConnect: MaterialButton
     private lateinit var btnSync: MaterialButton
     private lateinit var btnMode: MaterialButton
-    private lateinit var btnStream: MaterialButton
     private lateinit var btnRecord: MaterialButton
+    private lateinit var btnAdjust: MaterialButton
+    private lateinit var btnLock: MaterialButton
+    private lateinit var btnStep: MaterialButton
+    private lateinit var adjustPanel: View
+    private lateinit var ivReticle: View
+    private lateinit var seekYaw: SeekBar
+    private lateinit var tvYaw: TextView
+    private lateinit var tvScale: TextView
 
     // AR (session and anchor are touched by the GL thread, except resume/pause)
     private var session: Session? = null
@@ -95,6 +109,27 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
     private val pendingTap = AtomicReference<FloatArray?>(null)
 
     @Volatile private var scaleFactor = 1f
+    // manual adjustment of the origin (metres in AR world space, degrees around the vertical axis)
+    @Volatile private var offX = 0f
+    @Volatile private var offY = 0f
+    @Volatile private var offZ = 0f
+    @Volatile private var yawDeg = 0f
+    // horizontal direction the phone looks at, published by the GL thread
+    @Volatile private var camFx = 0f
+    @Volatile private var camFz = -1f
+    @Volatile private var gesturesLocked = false
+    @Volatile private var adjustOpen = false
+    private var stepCm = 5
+    private val moveHere = AtomicBoolean(false)
+
+    // touch state (UI thread only)
+    private var downX = 0f
+    private var downY = 0f
+    private var lastX = 0f
+    private var lastY = 0f
+    private var dragging = false
+    private var prevAngle = Float.NaN
+    private var touchSlop = 16f
     @Volatile private var hasModel = false
     @Volatile private var anchorPlaced = false
     @Volatile private var streamEnabled = true
@@ -107,6 +142,7 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
     @Volatile private var recordFrame = 0
 
     private var autoSyncDone = false
+    private var settleFrames = 0
     private var lastSentFrames = 0L
     private var lastFpsTime = 0L
     private var fps = 0
@@ -158,8 +194,16 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
         btnConnect = findViewById(R.id.btnConnect)
         btnSync = findViewById(R.id.btnSync)
         btnMode = findViewById(R.id.btnMode)
-        btnStream = findViewById(R.id.btnStream)
         btnRecord = findViewById(R.id.btnRecord)
+        btnAdjust = findViewById(R.id.btnAdjust)
+        btnLock = findViewById(R.id.btnLock)
+        btnStep = findViewById(R.id.btnStep)
+        adjustPanel = findViewById(R.id.adjustPanel)
+        ivReticle = findViewById(R.id.ivReticle)
+        seekYaw = findViewById(R.id.seekYaw)
+        tvYaw = findViewById(R.id.tvYaw)
+        tvScale = findViewById(R.id.tvScale)
+        touchSlop = ViewConfiguration.get(this).scaledTouchSlop.toFloat()
 
         glView.setPreserveEGLContextOnPause(true)
         glView.setEGLContextClientVersion(2)
@@ -170,20 +214,25 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
 
         scaleDetector = ScaleGestureDetector(this, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
             override fun onScale(detector: ScaleGestureDetector): Boolean {
-                scaleFactor = (scaleFactor * detector.scaleFactor).coerceIn(0.01f, 100f)
+                if (!gesturesLocked) setScale(scaleFactor * detector.scaleFactor)
                 return true
             }
         })
         tapDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
             override fun onDown(e: MotionEvent): Boolean = true
             override fun onSingleTapUp(e: MotionEvent): Boolean {
-                pendingTap.set(floatArrayOf(e.x, e.y))
+                if (gesturesLocked) return true
+                // first placement: the ring in the middle of the screen is the target
+                if (!anchorPlaced) {
+                    pendingTap.set(floatArrayOf(viewWidth / 2f, viewHeight / 2f))
+                } else {
+                    pendingTap.set(floatArrayOf(e.x, e.y))
+                }
                 return true
             }
         })
         glView.setOnTouchListener { _, event ->
-            scaleDetector.onTouchEvent(event)
-            if (!scaleDetector.isInProgress) tapDetector.onTouchEvent(event)
+            handleTouch(event)
             true
         }
 
@@ -195,11 +244,156 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
             mode = if (mode == Protocol.MODE_CAMERA) Protocol.MODE_OBJECT else Protocol.MODE_CAMERA
             refreshUi()
         }
-        btnStream.setOnClickListener {
+        tvStream.setOnClickListener {
             streamEnabled = !streamEnabled
             refreshUi()
         }
         btnRecord.setOnClickListener { toggleRecording() }
+
+        // ---- adjust panel
+        btnAdjust.setOnClickListener {
+            adjustOpen = !adjustOpen
+            refreshUi()
+        }
+        btnLock.setOnClickListener {
+            gesturesLocked = !gesturesLocked
+            refreshUi()
+        }
+        btnStep.setOnClickListener {
+            stepCm = when (stepCm) {
+                1 -> 5
+                5 -> 20
+                else -> 1
+            }
+            refreshUi()
+        }
+        holdRepeat(findViewById(R.id.btnLeft)) { nudge(-stepCm / 100f, 0f, 0f) }
+        holdRepeat(findViewById(R.id.btnRight)) { nudge(stepCm / 100f, 0f, 0f) }
+        holdRepeat(findViewById(R.id.btnFwd)) { nudge(0f, stepCm / 100f, 0f) }
+        holdRepeat(findViewById(R.id.btnBack)) { nudge(0f, -stepCm / 100f, 0f) }
+        holdRepeat(findViewById(R.id.btnUp)) { nudge(0f, 0f, stepCm / 100f) }
+        holdRepeat(findViewById(R.id.btnDown)) { nudge(0f, 0f, -stepCm / 100f) }
+        holdRepeat(findViewById(R.id.btnScaleMinus)) { setScale(scaleFactor / 1.03f) }
+        holdRepeat(findViewById(R.id.btnScalePlus)) { setScale(scaleFactor * 1.03f) }
+        seekYaw.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) setYaw(progress - 180f)
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
+        findViewById<View>(R.id.btnHere).setOnClickListener { moveHere.set(true) }
+        findViewById<View>(R.id.btnReset).setOnClickListener {
+            offX = 0f
+            offY = 0f
+            offZ = 0f
+            yawDeg = 0f
+            scaleFactor = 1f
+            refreshUi()
+        }
+        refreshUi()
+    }
+
+    // ------------------------------------------------------------------ adjustment helpers
+
+    private fun setScale(v: Float) {
+        scaleFactor = v.coerceIn(0.01f, 100f)
+    }
+
+    private fun setYaw(v: Float) {
+        var y = v
+        while (y > 180f) y -= 360f
+        while (y < -180f) y += 360f
+        yawDeg = y
+    }
+
+    /** Moves the origin relative to where the phone looks: right / forward / up, in metres. */
+    private fun nudge(right: Float, forward: Float, up: Float) {
+        val fx = camFx
+        val fz = camFz
+        offX += -fz * right + fx * forward
+        offZ += fx * right + fz * forward
+        offY += up
+    }
+
+    private fun holdRepeat(b: View, action: () -> Unit) {
+        val again = object : Runnable {
+            override fun run() {
+                action()
+                ui.postDelayed(this, 70)
+            }
+        }
+        b.setOnTouchListener { v, ev ->
+            when (ev.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    v.isPressed = true
+                    action()
+                    ui.postDelayed(again, 350)
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    v.isPressed = false
+                    ui.removeCallbacks(again)
+                }
+            }
+            true
+        }
+    }
+
+    private fun angleOf(e: MotionEvent): Float =
+        Math.toDegrees(atan2((e.getY(1) - e.getY(0)).toDouble(), (e.getX(1) - e.getX(0)).toDouble())).toFloat()
+
+    private fun handleTouch(e: MotionEvent) {
+        scaleDetector.onTouchEvent(e)
+        when (e.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                downX = e.x
+                downY = e.y
+                lastX = e.x
+                lastY = e.y
+                dragging = false
+                prevAngle = Float.NaN
+            }
+            MotionEvent.ACTION_POINTER_DOWN -> {
+                dragging = false
+                if (e.pointerCount >= 2) prevAngle = angleOf(e)
+            }
+            MotionEvent.ACTION_POINTER_UP -> {
+                prevAngle = Float.NaN
+                dragging = false
+                val idx = if (e.actionIndex == 0) 1 else 0
+                if (idx < e.pointerCount) {
+                    downX = e.getX(idx)
+                    downY = e.getY(idx)
+                    lastX = downX
+                    lastY = downY
+                }
+            }
+            MotionEvent.ACTION_MOVE -> {
+                if (e.pointerCount >= 2) {
+                    val a = angleOf(e)
+                    if (!prevAngle.isNaN() && !gesturesLocked) {
+                        var d = a - prevAngle
+                        if (d > 180f) d -= 360f else if (d < -180f) d += 360f
+                        // clockwise on screen = clockwise seen from above
+                        setYaw(yawDeg - d)
+                    }
+                    prevAngle = a
+                } else if (adjustOpen && !gesturesLocked) {
+                    if (!dragging && hypot(e.x - downX, e.y - downY) > touchSlop) {
+                        dragging = true
+                        lastX = e.x
+                        lastY = e.y
+                    }
+                    if (dragging) {
+                        nudge((e.x - lastX) * METERS_PER_PIXEL, -(e.y - lastY) * METERS_PER_PIXEL, 0f)
+                        lastX = e.x
+                        lastY = e.y
+                    }
+                }
+            }
+        }
+        if (!scaleDetector.isInProgress && e.pointerCount == 1) tapDetector.onTouchEvent(e)
     }
 
     override fun onResume() {
@@ -332,11 +526,44 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
 
             if (camera.trackingState != TrackingState.TRACKING) {
                 trackingText = "Lost: " + camera.trackingFailureReason.name.lowercase().replace('_', ' ')
+                settleFrames = 8
                 return
             }
             trackingText = "Tracking"
 
+            val dp = camera.displayOrientedPose
+            val zAxis = dp.zAxis
+            var fx = -zAxis[0]
+            var fz = -zAxis[2]
+            var len = sqrt(fx * fx + fz * fz)
+            if (len < 0.3f) {
+                // looking straight down/up: the top of the screen is "forward"
+                val yAxis = dp.yAxis
+                fx = yAxis[0]
+                fz = yAxis[2]
+                len = sqrt(fx * fx + fz * fz)
+            }
+            if (len > 0.001f) {
+                camFx = fx / len
+                camFz = fz / len
+            }
+
             handleTap(s, frame, camera)
+            if (moveHere.getAndSet(false)) {
+                val cp = camera.pose
+                val a0 = anchor
+                if (a0 == null) {
+                    anchor = s.createAnchor(Pose.makeTranslation(cp.tx(), cp.ty(), cp.tz()))
+                    anchorPlaced = true
+                    offX = 0f
+                    offY = 0f
+                    offZ = 0f
+                } else {
+                    // keep the height, put the origin under the phone
+                    offX = cp.tx() - a0.pose.tx()
+                    offZ = cp.tz() - a0.pose.tz()
+                }
+            }
 
             camera.getProjectionMatrix(projM, 0, 0.05f, 500f)
             camera.getViewMatrix(viewM, 0)
@@ -357,14 +584,20 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
         }
     }
 
-    /** Model matrix = translate(anchor) * rotateY(180) * scale  (same convention as the old app). */
+    /** Model matrix = translate(anchor + offset) * rotateY(180 + yaw) * scale. */
     private fun buildModelMatrix(out: FloatArray, a: Anchor?, scale: Float) {
         Matrix.setIdentityM(out, 0)
+        var tx = offX
+        var ty = offY
+        var tz = offZ
         if (a != null) {
             val p = a.pose
-            Matrix.translateM(out, 0, p.tx(), p.ty(), p.tz())
+            tx += p.tx()
+            ty += p.ty()
+            tz += p.tz()
         }
-        Matrix.rotateM(out, 0, 180f, 0f, 1f, 0f)
+        Matrix.translateM(out, 0, tx, ty, tz)
+        Matrix.rotateM(out, 0, 180f + yawDeg, 0f, 1f, 0f)
         Matrix.scaleM(out, 0, scale, scale, scale)
     }
 
@@ -375,7 +608,8 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
             for (hit in frame.hitTest(tap[0], tap[1])) {
                 val t = hit.trackable
                 if (t is Plane && t.isPoseInPolygon(hit.hitPose)) {
-                    placed = hit.createAnchor()
+                    // free anchor: it does not follow plane merges / refinements
+                    placed = s.createAnchor(hit.hitPose)
                     break
                 }
             }
@@ -391,12 +625,20 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
         anchor?.detach()
         anchor = placed
         anchorPlaced = true
+        offX = 0f
+        offY = 0f
+        offZ = 0f
     }
 
     private fun stream(camera: Camera) {
         val l = link ?: return
         if (!l.online || !streamEnabled) return
         if (hasModel && anchor == null) return
+        // right after tracking comes back ARCore may still be correcting its pose
+        if (settleFrames > 0) {
+            settleFrames--
+            return
+        }
 
         camera.displayOrientedPose.toMatrix(poseM, 0)
         // Field of view from the projection matrix, i.e. what the screen really shows.
@@ -576,7 +818,7 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
             lastFpsTime = now
         }
         if (!streamEnabled) {
-            tvStream.text = "Stream: paused"
+            tvStream.text = "Stream: paused (tap to resume)"
             tvStream.setTextColor(AMBER)
         } else if (!online) {
             tvStream.text = "Stream: -"
@@ -588,17 +830,26 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
 
         btnConnect.text = if (l == null) "Connect" else "Disconnect"
         btnMode.text = if (mode == Protocol.MODE_CAMERA) "Camera" else "Object"
-        btnStream.text = if (streamEnabled) "Stream on" else "Stream off"
-        btnRecord.text = if (recorder == null) "Record" else "Stop"
+        btnRecord.text = if (recorder == null) "REC" else "STOP"
+        btnAdjust.text = if (adjustOpen) "Close" else "Adjust"
+        adjustPanel.visibility = if (adjustOpen) View.VISIBLE else View.GONE
+        btnLock.text = if (gesturesLocked) "Unlock gestures" else "Lock gestures"
+        btnStep.text = "Step " + stepCm + " cm"
+        tvYaw.text = yawDeg.toInt().toString() + "\u00B0"
+        val wantProgress = (yawDeg + 180f).toInt()
+        if (seekYaw.progress != wantProgress) seekYaw.progress = wantProgress
+        tvScale.text = String.format(Locale.US, "x%.2f", scaleFactor)
         tvRecord.text = "REC  frame " + recordFrame
 
         val hint = when {
             session == null -> ""
             l == null -> "Tap Connect and enter the address of Blender"
-            hasModel && !anchorPlaced -> "Move the phone slowly, then tap to place the model"
-            !hasModel && !anchorPlaced && online && !downloading -> "Tap to set the origin here (optional)"
+            adjustOpen -> ""
+            hasModel && !anchorPlaced -> "Aim the ring at the floor and tap to place the model"
+            !hasModel && !anchorPlaced && online && !downloading -> "Tap to set the origin at the phone position (optional)"
             else -> ""
         }
+        ivReticle.visibility = if (session != null && !adjustOpen && hasModel && !anchorPlaced) View.VISIBLE else View.GONE
         tvHint.text = hint
         tvHint.visibility = if (hint.isEmpty()) View.GONE else View.VISIBLE
     }

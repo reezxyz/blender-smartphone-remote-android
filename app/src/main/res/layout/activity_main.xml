@@ -9,8 +9,17 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <ImageView
+        android:id="@+id/ivReticle"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_gravity="center"
+        android:contentDescription="@null"
+        android:src="@drawable/reticle"
+        android:visibility="gone" />
+
+    <!-- status card -->
     <LinearLayout
-        android:id="@+id/statusPanel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="top|start"
@@ -18,21 +27,24 @@
         android:layout_marginTop="36dp"
         android:background="@drawable/bg_panel"
         android:orientation="vertical"
-        android:padding="10dp">
+        android:paddingStart="14dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="10dp">
 
         <TextView
             android:id="@+id/tvConnection"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="#FFFFFF"
-            android:textSize="14sp"
+            android:textSize="15sp"
             android:textStyle="bold" />
 
         <TextView
             android:id="@+id/tvTracking"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
+            android:layout_marginTop="4dp"
             android:textColor="#FFFFFF"
             android:textSize="12sp" />
 
@@ -41,7 +53,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
-            android:maxWidth="260dp"
+            android:maxWidth="240dp"
             android:textColor="#FFFFFF"
             android:textSize="12sp" />
 
@@ -62,10 +74,10 @@
         android:layout_marginTop="36dp"
         android:layout_marginEnd="12dp"
         android:background="@drawable/bg_rec"
-        android:paddingStart="12dp"
-        android:paddingTop="6dp"
-        android:paddingEnd="12dp"
-        android:paddingBottom="6dp"
+        android:paddingStart="14dp"
+        android:paddingTop="7dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="7dp"
         android:text="REC"
         android:textColor="#FFFFFF"
         android:textSize="14sp"
@@ -77,93 +89,319 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|center_horizontal"
-        android:layout_marginBottom="110dp"
+        android:layout_marginBottom="118dp"
         android:background="@drawable/bg_panel"
         android:gravity="center"
         android:maxWidth="300dp"
-        android:padding="10dp"
+        android:paddingStart="16dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="10dp"
         android:textColor="#FFFFFF"
         android:textSize="14sp"
         android:visibility="gone" />
 
+    <!-- adjust origin panel -->
     <LinearLayout
-        android:id="@+id/controls"
+        android:id="@+id/adjustPanel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:layout_margin="10dp"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:layout_marginBottom="108dp"
         android:background="@drawable/bg_panel"
+        android:orientation="vertical"
+        android:padding="12dp"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Adjust origin"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnLock"
+                style="@style/BR.Button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Lock gestures" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:layout_marginBottom="6dp"
+            android:text="Drag = move   Twist = rotate   Pinch = scale"
+            android:textColor="#99FFFFFF"
+            android:textSize="11sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                style="@style/BR.Label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Move" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnLeft"
+                style="@style/BR.Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="3dp"
+                android:layout_marginEnd="3dp"
+                android:layout_weight="1"
+                android:text="◀" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRight"
+                style="@style/BR.Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="3dp"
+                android:layout_marginEnd="3dp"
+                android:layout_weight="1"
+                android:text="▶" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnFwd"
+                style="@style/BR.Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="3dp"
+                android:layout_marginEnd="3dp"
+                android:layout_weight="1"
+                android:text="▲" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnBack"
+                style="@style/BR.Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="3dp"
+                android:layout_marginEnd="3dp"
+                android:layout_weight="1"
+                android:text="▼" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                style="@style/BR.Label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Height" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnUp"
+                style="@style/BR.Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="3dp"
+                android:layout_marginEnd="3dp"
+                android:layout_weight="1"
+                android:text="Up" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnDown"
+                style="@style/BR.Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="3dp"
+                android:layout_marginEnd="3dp"
+                android:layout_weight="1"
+                android:text="Down" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnStep"
+                style="@style/BR.Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="3dp"
+                android:layout_marginEnd="3dp"
+                android:layout_weight="2"
+                android:text="Step 5 cm" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                style="@style/BR.Label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Rotate" />
+
+            <SeekBar
+                android:id="@+id/seekYaw"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:max="360"
+                android:progress="180"
+                android:progressTint="@color/accent"
+                android:thumbTint="@color/accent" />
+
+            <TextView
+                android:id="@+id/tvYaw"
+                android:layout_width="44dp"
+                android:layout_height="wrap_content"
+                android:gravity="end"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                style="@style/BR.Label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Scale" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnScaleMinus"
+                style="@style/BR.Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="3dp"
+                android:layout_marginEnd="3dp"
+                android:layout_weight="1"
+                android:text="−" />
+
+            <TextView
+                android:id="@+id/tvScale"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnScalePlus"
+                style="@style/BR.Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="3dp"
+                android:layout_marginEnd="3dp"
+                android:layout_weight="1"
+                android:text="+" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnHere"
+                style="@style/BR.Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="4dp"
+                android:layout_weight="1"
+                android:text="Move origin here" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnReset"
+                style="@style/BR.Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_weight="1"
+                android:text="Reset adjustments" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- bottom bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_margin="12dp"
+        android:background="@drawable/bg_panel"
+        android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:padding="6dp">
+        android:padding="8dp">
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnConnect"
+            style="@style/BR.Button"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="3dp"
             android:layout_marginEnd="3dp"
             android:layout_weight="1"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:paddingStart="2dp"
-            android:paddingEnd="2dp"
-            android:text="Connect"
-            android:textSize="11sp" />
+            android:text="Connect" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSync"
+            style="@style/BR.Button"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="3dp"
             android:layout_marginEnd="3dp"
             android:layout_weight="1"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:paddingStart="2dp"
-            android:paddingEnd="2dp"
-            android:text="Model"
-            android:textSize="11sp" />
+            android:text="Model" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnMode"
+            style="@style/BR.Button"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="3dp"
             android:layout_marginEnd="3dp"
             android:layout_weight="1"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:paddingStart="2dp"
-            android:paddingEnd="2dp"
-            android:text="Camera"
-            android:textSize="11sp" />
+            android:text="Camera" />
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnStream"
+            android:id="@+id/btnAdjust"
+            style="@style/BR.Button"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="3dp"
             android:layout_marginEnd="3dp"
             android:layout_weight="1"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:paddingStart="2dp"
-            android:paddingEnd="2dp"
-            android:text="Stream on"
-            android:textSize="11sp" />
+            android:text="Adjust" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnRecord"
-            android:layout_width="0dp"
+            style="@style/BR.Button.Record"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="3dp"
-            android:layout_marginEnd="3dp"
-            android:layout_weight="1"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:paddingStart="2dp"
-            android:paddingEnd="2dp"
-            android:text="Record"
-            android:textSize="11sp" />
+            android:layout_marginStart="6dp"
+            android:text="REC" />
     </LinearLayout>
 </FrameLayout>

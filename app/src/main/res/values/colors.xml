@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="accent">#FF8A1F</color>
+    <color name="glass">#CC12161C</color>
+    <color name="glass_light">#33FFFFFF</color>
+    <color name="record_red">#E53935</color>
+</resources>
