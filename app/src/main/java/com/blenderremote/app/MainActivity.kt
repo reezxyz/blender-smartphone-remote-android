@@ -578,7 +578,7 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
             if (hasModel && anchor != null) {
                 modelRenderer.draw(viewM, projM, modelM)
             }
-            stream(camera)
+            stream(camera, frame.timestamp)
         } catch (t: Throwable) {
             Log.e(TAG, "draw", t)
         }
@@ -630,7 +630,7 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
         offZ = 0f
     }
 
-    private fun stream(camera: Camera) {
+    private fun stream(camera: Camera, timestampNs: Long) {
         val l = link ?: return
         if (!l.online || !streamEnabled) return
         if (hasModel && anchor == null) return
@@ -647,7 +647,7 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
         val landscape = viewWidth >= viewHeight
         val fovLong = if (landscape) fovX else fovY
         val fovShort = if (landscape) fovY else fovX
-        l.submit(Protocol.frame(mode, modelM, fovLong, fovShort, poseM))
+        l.submit(Protocol.frame(mode, modelM, fovLong, fovShort, poseM, timestampNs))
     }
 
     // ------------------------------------------------------------------ network actions

@@ -30,6 +30,14 @@ object Protocol {
         return buf.array()
     }
 
+    /** msgpack unsigned 64-bit integer (nanoseconds of the ARCore frame). */
+    fun packLong(v: Long): ByteArray {
+        val buf = ByteBuffer.allocate(9).order(ByteOrder.BIG_ENDIAN)
+        buf.put(0xcf.toByte())
+        buf.putLong(v)
+        return buf.array()
+    }
+
     /**
      * One AR frame, in the same layout the old app used:
      * STATE <mode> NODE <anchor matrix> CAMERA <fov> <camera pose matrix>
@@ -40,9 +48,11 @@ object Protocol {
         anchorMatrix: FloatArray,
         fovLong: Float,
         fovShort: Float,
-        cameraPose: FloatArray
+        cameraPose: FloatArray,
+        timestampNs: Long
     ): List<ByteArray> = listOf(
         text("STATE"), text(mode),
+        text("TIME"), packLong(timestampNs),
         text("NODE"), packFloats(anchorMatrix),
         text("CAMERA"), packFloats(floatArrayOf(fovLong, fovShort)), packFloats(cameraPose)
     )
