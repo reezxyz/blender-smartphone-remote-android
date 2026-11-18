@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#000000">
@@ -11,93 +12,228 @@
 
     <ImageView
         android:id="@+id/ivReticle"
-        android:layout_width="56dp"
-        android:layout_height="56dp"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
         android:layout_gravity="center"
         android:contentDescription="@null"
         android:src="@drawable/reticle"
         android:visibility="gone" />
 
-    <!-- status card -->
+    <!-- status: ONE card across the whole width, a row per item so long texts fit -->
     <LinearLayout
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="top|start"
+        android:layout_gravity="top"
         android:layout_marginStart="12dp"
-        android:layout_marginTop="36dp"
-        android:background="@drawable/bg_panel"
-        android:orientation="vertical"
-        android:paddingStart="14dp"
-        android:paddingTop="10dp"
-        android:paddingEnd="14dp"
-        android:paddingBottom="10dp">
+        android:layout_marginTop="34dp"
+        android:layout_marginEnd="12dp"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:id="@+id/statusCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingStart="16dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="10dp">
+
+            <LinearLayout
+                android:id="@+id/chipConnection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:baselineAligned="false"
+                android:gravity="top"
+                android:orientation="horizontal"
+                android:paddingTop="3dp"
+                android:paddingBottom="3dp">
+
+                <TextView
+                android:shadowColor="#80000000"
+                android:shadowDx="0"
+                android:shadowDy="1"
+                android:shadowRadius="3"
+                    android:layout_width="76dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:letterSpacing="0.1"
+                    android:text="BLENDER"
+                    android:textColor="@color/on_glass_soft"
+                    android:textSize="10sp" />
+
+                <TextView
+                android:shadowColor="#80000000"
+                android:shadowDx="0"
+                android:shadowDy="1"
+                android:shadowRadius="3"
+                    android:id="@+id/tvConnection"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="3"
+                    android:textColor="@color/on_glass"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/chipTracking"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:baselineAligned="false"
+                android:gravity="top"
+                android:orientation="horizontal"
+                android:paddingTop="3dp"
+                android:paddingBottom="3dp">
+
+                <TextView
+                android:shadowColor="#80000000"
+                android:shadowDx="0"
+                android:shadowDy="1"
+                android:shadowRadius="3"
+                    android:layout_width="76dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:letterSpacing="0.1"
+                    android:text="AR"
+                    android:textColor="@color/on_glass_soft"
+                    android:textSize="10sp" />
+
+                <TextView
+                android:shadowColor="#80000000"
+                android:shadowDx="0"
+                android:shadowDy="1"
+                android:shadowRadius="3"
+                    android:id="@+id/tvTracking"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="3"
+                    android:textColor="@color/on_glass"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/chipModel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:baselineAligned="false"
+                android:gravity="top"
+                android:orientation="horizontal"
+                android:paddingTop="3dp"
+                android:paddingBottom="3dp">
+
+                <TextView
+                android:shadowColor="#80000000"
+                android:shadowDx="0"
+                android:shadowDy="1"
+                android:shadowRadius="3"
+                    android:layout_width="76dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:letterSpacing="0.1"
+                    android:text="MODEL"
+                    android:textColor="@color/on_glass_soft"
+                    android:textSize="10sp" />
+
+                <TextView
+                android:shadowColor="#80000000"
+                android:shadowDx="0"
+                android:shadowDy="1"
+                android:shadowRadius="3"
+                    android:id="@+id/tvModel"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="3"
+                    android:textColor="@color/on_glass"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/chipStream"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:baselineAligned="false"
+                android:gravity="top"
+                android:orientation="horizontal"
+                android:paddingTop="3dp"
+                android:paddingBottom="3dp">
+
+                <TextView
+                android:shadowColor="#80000000"
+                android:shadowDx="0"
+                android:shadowDy="1"
+                android:shadowRadius="3"
+                    android:layout_width="76dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:letterSpacing="0.1"
+                    android:text="STREAM"
+                    android:textColor="@color/on_glass_soft"
+                    android:textSize="10sp" />
+
+                <TextView
+                android:shadowColor="#80000000"
+                android:shadowDx="0"
+                android:shadowDy="1"
+                android:shadowRadius="3"
+                    android:id="@+id/tvStream"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="3"
+                    android:textColor="@color/on_glass"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </LinearLayout>
 
         <TextView
-            android:id="@+id/tvConnection"
+                android:shadowColor="#80000000"
+                android:shadowDx="0"
+                android:shadowDy="1"
+                android:shadowRadius="3"
+            android:id="@+id/tvRecord"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="10dp"
+            android:paddingStart="16dp"
+            android:paddingTop="7dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="7dp"
+            android:text="REC"
             android:textColor="#FFFFFF"
-            android:textSize="15sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/tvTracking"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textColor="#FFFFFF"
-            android:textSize="12sp" />
-
-        <TextView
-            android:id="@+id/tvModel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:maxWidth="240dp"
-            android:textColor="#FFFFFF"
-            android:textSize="12sp" />
-
-        <TextView
-            android:id="@+id/tvStream"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:textColor="#FFFFFF"
-            android:textSize="12sp" />
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
     </LinearLayout>
 
     <TextView
-        android:id="@+id/tvRecord"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="top|end"
-        android:layout_marginTop="36dp"
-        android:layout_marginEnd="12dp"
-        android:background="@drawable/bg_rec"
-        android:paddingStart="14dp"
-        android:paddingTop="7dp"
-        android:paddingEnd="14dp"
-        android:paddingBottom="7dp"
-        android:text="REC"
-        android:textColor="#FFFFFF"
-        android:textSize="14sp"
-        android:textStyle="bold"
-        android:visibility="gone" />
-
-    <TextView
+                android:shadowColor="#80000000"
+                android:shadowDx="0"
+                android:shadowDy="1"
+                android:shadowRadius="3"
         android:id="@+id/tvHint"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|center_horizontal"
-        android:layout_marginBottom="118dp"
-        android:background="@drawable/bg_panel"
+        android:layout_marginBottom="128dp"
         android:gravity="center"
-        android:maxWidth="300dp"
-        android:paddingStart="16dp"
-        android:paddingTop="10dp"
-        android:paddingEnd="16dp"
-        android:paddingBottom="10dp"
-        android:textColor="#FFFFFF"
+        android:maxWidth="320dp"
+        android:paddingStart="20dp"
+        android:paddingTop="12dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="12dp"
+        android:textColor="@color/on_glass"
         android:textSize="14sp"
         android:visibility="gone" />
 
@@ -109,10 +245,9 @@
         android:layout_gravity="bottom"
         android:layout_marginStart="12dp"
         android:layout_marginEnd="12dp"
-        android:layout_marginBottom="108dp"
-        android:background="@drawable/bg_panel"
+        android:layout_marginBottom="116dp"
         android:orientation="vertical"
-        android:padding="12dp"
+        android:padding="14dp"
         android:visibility="gone">
 
         <LinearLayout
@@ -122,12 +257,16 @@
             android:orientation="horizontal">
 
             <TextView
+                android:shadowColor="#80000000"
+                android:shadowDx="0"
+                android:shadowDy="1"
+                android:shadowRadius="3"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Adjust origin"
-                android:textColor="#FFFFFF"
-                android:textSize="15sp"
+                android:textColor="@color/on_glass"
+                android:textSize="16sp"
                 android:textStyle="bold" />
 
             <com.google.android.material.button.MaterialButton
@@ -139,21 +278,30 @@
         </LinearLayout>
 
         <TextView
+                android:shadowColor="#80000000"
+                android:shadowDx="0"
+                android:shadowDy="1"
+                android:shadowRadius="3"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
-            android:layout_marginBottom="6dp"
+            android:layout_marginBottom="4dp"
             android:text="Drag = move   Twist = rotate   Pinch = scale"
-            android:textColor="#99FFFFFF"
+            android:textColor="@color/on_glass_soft"
             android:textSize="11sp" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
             <TextView
+                android:shadowColor="#80000000"
+                android:shadowDx="0"
+                android:shadowDy="1"
+                android:shadowRadius="3"
                 style="@style/BR.Label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -198,6 +346,7 @@
                 android:layout_marginEnd="3dp"
                 android:layout_weight="1"
                 android:text="▼" />
+
         </LinearLayout>
 
         <LinearLayout
@@ -208,6 +357,10 @@
             android:orientation="horizontal">
 
             <TextView
+                android:shadowColor="#80000000"
+                android:shadowDx="0"
+                android:shadowDy="1"
+                android:shadowRadius="3"
                 style="@style/BR.Label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -242,6 +395,7 @@
                 android:layout_marginEnd="3dp"
                 android:layout_weight="2"
                 android:text="Step 5 cm" />
+
         </LinearLayout>
 
         <LinearLayout
@@ -252,6 +406,10 @@
             android:orientation="horizontal">
 
             <TextView
+                android:shadowColor="#80000000"
+                android:shadowDx="0"
+                android:shadowDy="1"
+                android:shadowRadius="3"
                 style="@style/BR.Label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -268,12 +426,17 @@
                 android:thumbTint="@color/accent" />
 
             <TextView
+                android:shadowColor="#80000000"
+                android:shadowDx="0"
+                android:shadowDy="1"
+                android:shadowRadius="3"
                 android:id="@+id/tvYaw"
                 android:layout_width="44dp"
                 android:layout_height="wrap_content"
                 android:gravity="end"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/on_glass"
                 android:textSize="12sp" />
+
         </LinearLayout>
 
         <LinearLayout
@@ -284,6 +447,10 @@
             android:orientation="horizontal">
 
             <TextView
+                android:shadowColor="#80000000"
+                android:shadowDx="0"
+                android:shadowDy="1"
+                android:shadowRadius="3"
                 style="@style/BR.Label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -300,13 +467,18 @@
                 android:text="−" />
 
             <TextView
+                android:shadowColor="#80000000"
+                android:shadowDx="0"
+                android:shadowDy="1"
+                android:shadowRadius="3"
                 android:id="@+id/tvScale"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:gravity="center"
-                android:textColor="#FFFFFF"
-                android:textSize="13sp" />
+                android:textColor="@color/on_glass"
+                android:textSize="13sp"
+                android:textStyle="bold" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnScalePlus"
@@ -317,12 +489,13 @@
                 android:layout_marginEnd="3dp"
                 android:layout_weight="1"
                 android:text="+" />
+
         </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="10dp"
             android:orientation="horizontal">
 
             <com.google.android.material.button.MaterialButton
@@ -350,58 +523,57 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
+        android:id="@+id/bottomBar"
         android:layout_margin="12dp"
-        android:background="@drawable/bg_panel"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:padding="8dp">
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnConnect"
-            style="@style/BR.Button"
+            style="@style/BR.Nav"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="3dp"
-            android:layout_marginEnd="3dp"
             android:layout_weight="1"
-            android:text="Connect" />
+            android:text="Connect"
+            app:icon="@drawable/ic_link" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSync"
-            style="@style/BR.Button"
+            style="@style/BR.Nav"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="3dp"
-            android:layout_marginEnd="3dp"
             android:layout_weight="1"
-            android:text="Model" />
+            android:text="Model"
+            app:icon="@drawable/ic_cube" />
+
+        <ImageButton
+            android:id="@+id/btnRecord"
+            android:layout_width="68dp"
+            android:layout_height="68dp"
+            android:layout_marginStart="6dp"
+            android:layout_marginEnd="6dp"
+            android:background="@drawable/bg_fab"
+            android:contentDescription="Record"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_rec_dot" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnMode"
-            style="@style/BR.Button"
+            style="@style/BR.Nav"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="3dp"
-            android:layout_marginEnd="3dp"
             android:layout_weight="1"
-            android:text="Camera" />
+            android:text="Camera"
+            app:icon="@drawable/ic_camera" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnAdjust"
-            style="@style/BR.Button"
+            style="@style/BR.Nav"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="3dp"
-            android:layout_marginEnd="3dp"
             android:layout_weight="1"
-            android:text="Adjust" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnRecord"
-            style="@style/BR.Button.Record"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="6dp"
-            android:text="REC" />
+            android:text="Adjust"
+            app:icon="@drawable/ic_adjust" />
     </LinearLayout>
 </FrameLayout>

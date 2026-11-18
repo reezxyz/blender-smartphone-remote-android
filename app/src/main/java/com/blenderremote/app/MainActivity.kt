@@ -6,6 +6,7 @@ import android.hardware.display.DisplayManager
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
+import android.content.res.ColorStateList
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -19,6 +20,7 @@ import android.view.ViewConfiguration
 import android.view.WindowManager
 import android.widget.EditText
 import android.widget.FrameLayout
+import android.widget.ImageButton
 import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
@@ -62,10 +64,12 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
         const val TAG = "BlenderRemote"
         const val PREFS = "blender_remote"
         const val PREF_ADDRESS = "address"
-        const val GREEN = 0xFF4CD964.toInt()
-        const val AMBER = 0xFFFFB300.toInt()
-        const val RED = 0xFFFF5252.toInt()
-        const val WHITE = 0xFFFFFFFF.toInt()
+        // status colours for text on glass
+        const val GREEN = 0xFF7BE495.toInt()
+        const val AMBER = 0xFFFFCB57.toInt()
+        const val RED = 0xFFFF7070.toInt()
+        const val INK = 0xFFFFFFFF.toInt()
+        const val DARK = 0xFF1B1D1F.toInt()
         const val METERS_PER_PIXEL = 0.0025f
     }
 
@@ -80,7 +84,7 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
     private lateinit var btnConnect: MaterialButton
     private lateinit var btnSync: MaterialButton
     private lateinit var btnMode: MaterialButton
-    private lateinit var btnRecord: MaterialButton
+    private lateinit var btnRecord: ImageButton
     private lateinit var btnAdjust: MaterialButton
     private lateinit var btnLock: MaterialButton
     private lateinit var btnStep: MaterialButton
@@ -95,6 +99,20 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
     private var installRequested = false
     private val background = BackgroundRenderer()
     private val modelRenderer = ModelRenderer()
+    private val glass = GlassRenderer()
+
+    /** A view that gets a blurred-glass background drawn by OpenGL behind it. */
+    private class GlassItem(
+        val view: View,
+        val radiusDp: Float,
+        val r: Float,
+        val g: Float,
+        val b: Float,
+        val a: Float,
+        val base: Boolean
+    )
+
+    private val glassItems = ArrayList<GlassItem>()
     private var anchor: Anchor? = null
     private var viewWidth = 1
     private var viewHeight = 1
@@ -257,14 +275,17 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
         btnConnect.setOnClickListener {
             if (link == null) showConnectDialog() else disconnect()
         }
-        btnSync.setOnClickListener { syncModel() }
+        btnSync.setOnClickListener { confirmSync() }
         btnMode.setOnClickListener {
             mode = if (mode == Protocol.MODE_CAMERA) Protocol.MODE_OBJECT else Protocol.MODE_CAMERA
             refreshUi()
         }
-        tvStream.setOnClickListener {
+        findViewById<View>(R.id.chipStream).setOnClickListener {
             streamEnabled = !streamEnabled
             refreshUi()
+        }
+        findViewById<View>(R.id.chipModel).setOnClickListener {
+            Toast.makeText(this, "Model: " + modelStatus, Toast.LENGTH_LONG).show()
         }
         btnRecord.setOnClickListener { toggleRecording() }
 
@@ -310,7 +331,69 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
             scaleFactor = 1f
             refreshUi()
         }
+        setupGlass()
         refreshUi()
+    }
+
+    // ------------------------------------------------------------------ glass
+
+    private fun addGlass(id: Int, radiusDp: Float, r: Float, g: Float, b: Float, a: Float, base: Boolean) {
+        glassItems.add(GlassItem(findViewById(id), radiusDp, r, g, b, a, base))
+    }
+
+    private fun setupGlass() {
+        // parents first: they are drawn first
+        addGlass(R.id.statusCard, 26f, 1f, 1f, 1f, 0.10f, true)
+        addGlass(R.id.bottomBar, 36f, 1f, 1f, 1f, 0.10f, true)
+        addGlass(R.id.adjustPanel, 28f, 1f, 1f, 1f, 0.12f, true)
+        for (id in intArrayOf(
+            R.id.btnLock, R.id.btnLeft, R.id.btnRight, R.id.btnFwd, R.id.btnBack, R.id.btnUp, R.id.btnDown,
+            R.id.btnStep, R.id.btnScaleMinus, R.id.btnScalePlus, R.id.btnReset
+        )) {
+            addGlass(id, 20f, 1f, 1f, 1f, 0.16f, false)
+        }
+        // Blender orange
+        addGlass(R.id.btnHere, 20f, 0.96f, 0.47f, 0.16f, 0.90f, false)
+        addGlass(R.id.tvHint, 28f, 0.96f, 0.47f, 0.16f, 0.82f, true)
+        addGlass(R.id.tvRecord, 20f, 0.90f, 0.22f, 0.21f, 0.80f, true)
+
+        // positions change with the layout (panels open / close, text changes)
+        window.decorView.viewTreeObserver.addOnGlobalLayoutListener { updateGlassRects() }
+    }
+
+    /** Selected buttons become a solid white pill with dark text (like the day picker in the reference). */
+    private fun markSelected(b: MaterialButton, on: Boolean) {
+        b.backgroundTintList = ColorStateList.valueOf(if (on) 0xF5FFFFFF.toInt() else 0x00FFFFFF)
+        b.setTextColor(if (on) DARK else INK)
+        b.iconTint = ColorStateList.valueOf(if (on) DARK else INK)
+    }
+
+    private fun updateGlassRects() {
+        if (glassItems.isEmpty()) return
+        val density = resources.displayMetrics.density
+        val origin = IntArray(2)
+        val loc = IntArray(2)
+        glView.getLocationInWindow(origin)
+        val out = FloatArray(glassItems.size * GlassRenderer.FLOATS_PER_RECT)
+        var n = 0
+        for (item in glassItems) {
+            val v = item.view
+            if (!v.isShown || v.width == 0 || v.height == 0) continue
+            v.getLocationInWindow(loc)
+            val o = n * GlassRenderer.FLOATS_PER_RECT
+            out[o] = (loc[0] - origin[0]).toFloat()
+            out[o + 1] = (loc[1] - origin[1]).toFloat()
+            out[o + 2] = v.width.toFloat()
+            out[o + 3] = v.height.toFloat()
+            out[o + 4] = item.radiusDp * density
+            out[o + 5] = item.r
+            out[o + 6] = item.g
+            out[o + 7] = item.b
+            out[o + 8] = item.a
+            out[o + 9] = if (item.base) 1f else 0f
+            n++
+        }
+        glass.setRects(out.copyOf(n * GlassRenderer.FLOATS_PER_RECT))
     }
 
     // ------------------------------------------------------------------ adjustment helpers
@@ -514,6 +597,7 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
         try {
             background.create()
             modelRenderer.create()
+            glass.create()
         } catch (e: Exception) {
             Log.e(TAG, "GL setup failed", e)
             trackingText = "Graphics error: " + e.message
@@ -524,10 +608,20 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
         viewWidth = width
         viewHeight = height
         GLES20.glViewport(0, 0, width, height)
+        glass.resize(width, height)
         viewportChanged = true
     }
 
     override fun onDrawFrame(gl: GL10?) {
+        drawScene()
+        try {
+            glass.render()
+        } catch (t: Throwable) {
+            Log.e(TAG, "glass", t)
+        }
+    }
+
+    private fun drawScene() {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
         val s = session ?: return
         try {
@@ -741,6 +835,30 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
         }
     }
 
+    /** Asks first: a model request freezes Blender for a moment and replaces the model. */
+    private fun confirmSync() {
+        val l = link
+        if (l == null || !l.online) {
+            Toast.makeText(this, "Connect to Blender first", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (downloading) {
+            Toast.makeText(this, "A model transfer is already running", Toast.LENGTH_SHORT).show()
+            return
+        }
+        var message = "Blender will export the scene and send it to this phone. " +
+                "Blender can freeze for a few seconds and the current model is replaced."
+        if (recorder != null) {
+            message += "\n\nYou are recording right now. This can disturb the recording."
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Request model from Blender?")
+            .setMessage(message)
+            .setPositiveButton("Request") { _, _ -> syncModel() }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
     private fun syncModel() {
         val l = link
         if (l == null || !l.online) {
@@ -829,20 +947,20 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
         val online = l != null && l.online
 
         if (l == null) {
-            tvConnection.text = "Not connected"
+            tvConnection.text = "Offline"
             tvConnection.setTextColor(RED)
         } else if (l.online) {
-            tvConnection.text = "Connected  " + l.rttMs + " ms"
+            tvConnection.text = "Online " + l.rttMs + " ms"
             tvConnection.setTextColor(GREEN)
         } else {
-            tvConnection.text = "Waiting for Blender..."
+            tvConnection.text = "Waiting..."
             tvConnection.setTextColor(AMBER)
         }
 
-        tvTracking.text = "AR: " + trackingText
+        tvTracking.text = trackingText
         tvTracking.setTextColor(if (trackingText == "Tracking") GREEN else AMBER)
-        tvModel.text = "Model: " + modelStatus
-        tvModel.setTextColor(if (modelStatus.startsWith("Failed") || modelStatus.startsWith("Model too")) RED else WHITE)
+        tvModel.text = modelStatus
+        tvModel.setTextColor(if (modelStatus.startsWith("Failed") || modelStatus.startsWith("Model too")) RED else INK)
 
         val now = System.currentTimeMillis()
         val sent = l?.sentFrames ?: 0L
@@ -852,28 +970,31 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
             lastFpsTime = now
         }
         if (!streamEnabled) {
-            tvStream.text = "Stream: paused (tap to resume)"
+            tvStream.text = "Paused"
             tvStream.setTextColor(AMBER)
         } else if (!online) {
-            tvStream.text = "Stream: -"
-            tvStream.setTextColor(WHITE)
+            tvStream.text = "-"
+            tvStream.setTextColor(INK)
         } else {
-            tvStream.text = "Stream: " + fps + " fps"
+            tvStream.text = fps.toString() + " fps"
             tvStream.setTextColor(if (fps > 0) GREEN else AMBER)
         }
 
         btnConnect.text = if (l == null) "Connect" else "Disconnect"
         btnMode.text = if (mode == Protocol.MODE_CAMERA) "Camera" else "Object"
-        btnRecord.text = if (recorder == null) "REC" else "STOP"
+        btnRecord.setImageResource(if (recorder == null) R.drawable.ic_rec_dot else R.drawable.ic_rec_stop)
         btnAdjust.text = if (adjustOpen) "Close" else "Adjust"
+        markSelected(btnAdjust, adjustOpen)
         adjustPanel.visibility = if (adjustOpen) View.VISIBLE else View.GONE
         btnLock.text = if (gesturesLocked) "Unlock gestures" else "Lock gestures"
+        markSelected(btnLock, gesturesLocked)
         btnStep.text = "Step " + stepCm + " cm"
-        tvYaw.text = yawDeg.toInt().toString() + "\u00B0"
+        tvYaw.text = yawDeg.toInt().toString() + "°"
         val wantProgress = (yawDeg + 180f).toInt()
         if (seekYaw.progress != wantProgress) seekYaw.progress = wantProgress
         tvScale.text = String.format(Locale.US, "x%.2f", scaleFactor)
         tvRecord.text = "REC  frame " + recordFrame
+        updateGlassRects()
 
         val hint = when {
             session == null -> ""
@@ -883,8 +1004,8 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
             !hasModel && !anchorPlaced && online && !downloading -> "Tap to set the origin at the phone position (optional)"
             else -> ""
         }
-        ivReticle.visibility = if (session != null && !adjustOpen && hasModel && !anchorPlaced) View.VISIBLE else View.GONE
         tvHint.text = hint
         tvHint.visibility = if (hint.isEmpty()) View.GONE else View.VISIBLE
+        ivReticle.visibility = if (session != null && !adjustOpen && hasModel && !anchorPlaced) View.VISIBLE else View.GONE
     }
 }

@@ -2,13 +2,13 @@
 <resources>
     <style name="Theme.BlenderRemote" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="colorPrimary">@color/accent</item>
-        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorOnPrimary">@android:color/white</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
     </style>
 
-    <!-- Rounded, translucent button used everywhere in the overlay -->
+    <!-- Small button used in the adjust panel (glass is drawn behind it by OpenGL) -->
     <style name="BR.Button" parent="Widget.MaterialComponents.Button.TextButton">
-        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:textColor">@color/on_glass</item>
         <item name="android:textSize">12sp</item>
         <item name="android:textAllCaps">false</item>
         <item name="android:minWidth">0dp</item>
@@ -18,21 +18,46 @@
         <item name="android:paddingStart">8dp</item>
         <item name="android:paddingEnd">8dp</item>
         <item name="cornerRadius">20dp</item>
-        <item name="backgroundTint">@color/glass_light</item>
+        <item name="backgroundTint">@android:color/transparent</item>
+        <item name="android:shadowColor">#80000000</item>
+        <item name="android:shadowDx">0</item>
+        <item name="android:shadowDy">1</item>
+        <item name="android:shadowRadius">3</item>
     </style>
 
-    <style name="BR.Button.Record">
-        <item name="android:minWidth">64dp</item>
-        <item name="android:minHeight">64dp</item>
-        <item name="android:textSize">11sp</item>
-        <item name="android:textStyle">bold</item>
-        <item name="cornerRadius">32dp</item>
-        <item name="backgroundTint">@color/record_red</item>
+    <!-- Icon on top, label below: bottom bar buttons -->
+    <style name="BR.Nav" parent="Widget.MaterialComponents.Button.TextButton">
+        <item name="android:textColor">@color/on_glass</item>
+        <item name="android:textSize">10sp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:letterSpacing">0</item>
+        <item name="android:minWidth">0dp</item>
+        <item name="android:minHeight">0dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:paddingStart">2dp</item>
+        <item name="android:paddingEnd">2dp</item>
+        <item name="android:paddingTop">8dp</item>
+        <item name="android:paddingBottom">8dp</item>
+        <item name="iconGravity">textTop</item>
+        <item name="iconTint">@color/on_glass</item>
+        <item name="iconSize">24dp</item>
+        <item name="iconPadding">2dp</item>
+        <item name="cornerRadius">22dp</item>
+        <item name="backgroundTint">@android:color/transparent</item>
+        <item name="android:shadowColor">#80000000</item>
+        <item name="android:shadowDx">0</item>
+        <item name="android:shadowDy">1</item>
+        <item name="android:shadowRadius">3</item>
     </style>
 
     <style name="BR.Label" parent="">
-        <item name="android:textColor">#B0FFFFFF</item>
+        <item name="android:textColor">@color/on_glass_soft</item>
         <item name="android:textSize">12sp</item>
         <item name="android:minWidth">52dp</item>
+        <item name="android:shadowColor">#80000000</item>
+        <item name="android:shadowDx">0</item>
+        <item name="android:shadowDy">1</item>
+        <item name="android:shadowRadius">3</item>
     </style>
 </resources>
