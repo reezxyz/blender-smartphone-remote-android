@@ -43,6 +43,8 @@ import com.google.ar.core.exceptions.UnavailableApkTooOldException
 import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException
 import com.google.ar.core.exceptions.UnavailableSdkTooOldException
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
 import java.io.File
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
@@ -158,6 +160,22 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
             } else {
                 Toast.makeText(this, "Camera permission is required", Toast.LENGTH_LONG).show()
                 finish()
+            }
+        }
+
+    // Bundled scanner (ZXing): works on every phone, no Google Play services module.
+    // The AR session is paused while the scanner owns the camera (onPause / onResume).
+    private val qrLauncher =
+        registerForActivityResult(ScanContract()) { result ->
+            val text = result.contents
+            if (text != null) {
+                val address = parseQrAddress(text)
+                if (address == null) {
+                    Toast.makeText(this, "This is not a Blender Remote QR code", Toast.LENGTH_LONG).show()
+                } else {
+                    Toast.makeText(this, "Connecting to $address", Toast.LENGTH_SHORT).show()
+                    connect(address)
+                }
             }
         }
 
@@ -670,8 +688,24 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
                     Protocol.DEFAULT_PORT + ").")
             .setView(box)
             .setPositiveButton("Connect") { _, _ -> connect(input.text.toString().trim()) }
+            .setNeutralButton("Scan QR") { _, _ -> scanQr() }
             .setNegativeButton("Cancel", null)
             .show()
+    }
+
+    /** Reads the QR code Blender shows after START (plain text "ip:port"). */
+    private fun scanQr() {
+        val options = ScanOptions()
+        options.setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+        options.setPrompt("Scan the QR code shown in Blender")
+        options.setBeepEnabled(false)
+        options.setOrientationLocked(false)
+        qrLauncher.launch(options)
+    }
+
+    private fun parseQrAddress(raw: String?): String? {
+        val text = (raw ?: return null).trim().removePrefix("tcp://")
+        return if (Regex("^[A-Za-z0-9.\\-]+(:[0-9]{1,5})?$").matches(text)) text else null
     }
 
     private fun connect(address: String) {
@@ -843,7 +877,7 @@ class MainActivity : AppCompatActivity(), GLSurfaceView.Renderer {
 
         val hint = when {
             session == null -> ""
-            l == null -> "Tap Connect and enter the address of Blender"
+            l == null -> "Tap Connect, then scan the QR code shown in Blender (or type the address)"
             adjustOpen -> ""
             hasModel && !anchorPlaced -> "Aim the ring at the floor and tap to place the model"
             !hasModel && !anchorPlaced && online && !downloading -> "Tap to set the origin at the phone position (optional)"

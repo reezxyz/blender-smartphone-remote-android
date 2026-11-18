@@ -35,4 +35,5 @@ dependencies {
     implementation("com.google.ar:core:1.42.0")
     implementation("com.google.android.material:material:1.12.0")
     implementation("org.zeromq:jeromq:0.5.2")
+    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
 }
